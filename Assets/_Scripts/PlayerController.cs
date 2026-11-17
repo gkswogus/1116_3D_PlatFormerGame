@@ -17,6 +17,8 @@ public class PlayerController : MonoBehaviour
 
     private Animator anim;
 
+    public ParticleSystem dustParticles;
+
     private void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -89,13 +91,11 @@ public class PlayerController : MonoBehaviour
         forward.Normalize();
         right.Normalize();
 
+        
         // 이동 방향 계산
-        Vector3 moveDirection =
-            forward * input.y + right * input.x;
+        Vector3 moveDirection = forward * input.y + right * input.x;
 
-        moveDirection = Vector3.ClampMagnitude(
-            moveDirection, 1f
-        );
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f );
 
         // 이동 방향으로 캐릭터 회전
         RotatePlayer(moveDirection);
@@ -138,12 +138,40 @@ public class PlayerController : MonoBehaviour
         Debug.Log(jumping);
     }
 
+    // 땅에서 움직일 때만 먼지 파티클 재생
+    private void UpdateDustParticles()
+    {
+        if (dustParticles == null)
+            return;
+
+        // 수평 속도만 사용 (중력에 의한 y 속도 제외)
+        Vector3 moveVelocity = controller.velocity;
+        moveVelocity.y = 0f;
+
+        bool movingOnGround = Grounded() && moveVelocity.sqrMagnitude > 0.01f;
+
+        if (movingOnGround && !dustParticles.isPlaying)
+        {
+            dustParticles.Play();
+        }
+        else if (!movingOnGround && dustParticles.isPlaying)
+        {
+            dustParticles.Stop();
+        }
+    }
+
     private void Update()
     {
         if (controller == null || maincamera == null)
             return;
 
         MovePlayer();
+        UpdateDustParticles();
+    }
 
+    private void OnDisable()
+    {
+        if (dustParticles != null)
+            dustParticles.Stop();
     }
 }
