@@ -6,8 +6,10 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 360f;
 
+    [Tooltip("이동 기준이 되는 카메라 리그 (씬의 Camera 오브젝트)")]
+    public FollowCamera cameraRig;
+
     private CharacterController controller;
-    private Camera maincamera;
 
     public bool jumping = false;
 
@@ -22,7 +24,6 @@ public class PlayerController : MonoBehaviour
     private void Start()
     {
         controller = GetComponent<CharacterController>();
-        maincamera = Camera.main;
         anim = GetComponentInChildren<Animator>();
     }
 
@@ -81,17 +82,12 @@ public class PlayerController : MonoBehaviour
 
         Vector2 input = ReadMoveInput();
 
-        // 카메라 방향을 수평으로 변환
-        Vector3 forward = maincamera.transform.forward;
-        Vector3 right = maincamera.transform.right;
+        // 카메라가 보는 수평 방향 기준 (W = 카메라 앞, D = 카메라 오른쪽)
+        // 실제 카메라 transform 대신 리그의 yaw를 쓰므로, 카메라가 흔들려도 이동 방향이 휘지 않음
+        Quaternion cameraYaw = cameraRig.PlanarRotation;
+        Vector3 forward = cameraYaw * Vector3.forward;
+        Vector3 right = cameraYaw * Vector3.right;
 
-        forward.y = 0f;
-        right.y = 0f;
-
-        forward.Normalize();
-        right.Normalize();
-
-        
         // 이동 방향 계산
         Vector3 moveDirection = forward * input.y + right * input.x;
 
@@ -162,7 +158,7 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (controller == null || maincamera == null)
+        if (controller == null || cameraRig == null)
             return;
 
         MovePlayer();
